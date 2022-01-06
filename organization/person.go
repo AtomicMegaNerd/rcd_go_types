@@ -6,6 +6,19 @@ import (
 	"strings"
 )
 
+type Name struct {
+	first string
+	last  string
+}
+
+func (n *Name) FullName() string {
+	return fmt.Sprintf("%s %s", n.first, n.last)
+}
+
+type Employee struct {
+	Name
+}
+
 // This is a type alias... it really is just a string
 // type TwitterHandler = string
 
@@ -27,24 +40,59 @@ type Identifiable interface {
 	ID() string
 }
 
+type Citizen interface {
+	Identifiable
+	Country() string
+}
+
+// Type definition
+type socialSecurityNumber string
+
+func NewSocialSecurityNumber(id string) Citizen {
+	return socialSecurityNumber(id)
+}
+
+func (ssn socialSecurityNumber) ID() string {
+	return string(ssn)
+}
+
+func (ssn socialSecurityNumber) Country() string {
+	return "Canada"
+}
+
+type europeanUnionIdentifier struct {
+	id      string
+	country string
+}
+
+func NewEuropeanUnionIdentifier(id, country string) Citizen {
+	return europeanUnionIdentifier{id: id, country: country}
+}
+
+func (eur europeanUnionIdentifier) ID() string {
+	return string(eur.id)
+}
+
+func (eur europeanUnionIdentifier) Country() string {
+	return string(eur.country)
+}
+
 type Person struct {
-	firstName      string
-	lastName       string
+	Name           // This is an embedded type, this is actually pretty cool.
+	Citizen        // Embedding an interface in the type
 	twitterHandler TwitterHandler
 }
 
-func NewPerson(firstName, lastName string) Person {
-	return Person{firstName: firstName, lastName: lastName}
+func NewPerson(firstName, lastName string, citizen Citizen) Person {
+	return Person{Name: Name{first: firstName, last: lastName},
+		Citizen: citizen,
+	}
 }
 
-func (p *Person) FullName() string {
-	return fmt.Sprintf("%s %s", p.firstName, p.lastName)
-}
-
-// Go implicitly implements interfaces if it has the
-// correct method!
 func (p *Person) ID() string {
-	return "12345"
+	// Here we are qualifying which identifier we are referring to as to
+	// avoid conflict.  We are using the embedded Identifiable type.
+	return fmt.Sprintf("Person's identifier: %s", p.Citizen.ID())
 }
 
 func (p *Person) SetTwitterHandler(handler TwitterHandler) error {
